@@ -4,27 +4,46 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using Unity.VisualScripting;
+using UnityEngine.InputSystem;
 
 public class DEV_ToggleConsole : MonoBehaviour
 {
-    public GameObject devConsole;
+    [Header("References")]
+    [SerializeField] private GameObject devConsole;
+    [SerializeField] private TMP_InputField inputBox;
 
-    bool isLeftShiftPressed;
-    bool isRightShiftPressed;
-    bool isFivePressed;
-
-    bool isConsoleActive;
-
-    public TMP_InputField inputBox;
+    [Header("Toggle Controls")]
+    [SerializeField] private Key[] requiredKeys;
+    private Key toggleKey;
 
     void Start()
     {
-        #if DEVELOPMENT_BUILD || UNITY_EDITOR
-        //Do nothing
-        #else
-        Destroy(this.GameObject());
-        #endif
-        
+#if !DEVELOPMENT_BUILD && !UNITY_EDITOR
+      if (devConsole != null)
+        {
+            devConsole.SetActive(false);
+        }
+
+        enabled = false;
+        return;  
+#endif
+
+        if(devConsole == null)
+        {
+            Debug.LogError("DEV_ToggleConsole: MIssing devConsole reference.", this);
+
+            enabled = false;
+            return;
+        }
+
+        if(inputBox == null)
+        {
+            Debug.LogError("Dev_ToggleConsole: Missing inputBox reference.", this);
+
+            enabled = false;
+            return;
+        }
+
         devConsole.SetActive(false);
     }
 
@@ -35,49 +54,49 @@ public class DEV_ToggleConsole : MonoBehaviour
 
     public void ToggleDevConsole()
     {
-        //Checking if the keys are pressed together
-        if (Input.GetKey(KeyCode.LeftShift))
+        Keyboard keyboard = Keyboard.current;
+
+        if(keyboard == null)
         {
-            isLeftShiftPressed = true;
+            Debug.LogError("DEV_ToggleConsole: Cannot find keyboard. Please check a keyboard is connected", this);
+
+            enabled = false;
+            return;
         }
 
-        if (isLeftShiftPressed && Input.GetKey(KeyCode.RightShift))
+        // Close the devConsole with escape
+        if (devConsole.activeSelf)
         {
-            isRightShiftPressed = true;
-        }
-
-        if (isLeftShiftPressed && isRightShiftPressed && Input.GetKey(KeyCode.Alpha5))
-        {
-            isFivePressed = true;
-        }
-
-        //If the combination left shift, right shift, 5, 7 are pressed
-        if (isLeftShiftPressed && isRightShiftPressed && isFivePressed && Input.GetKeyDown(KeyCode.Alpha7))
-        {
-            //Enable the dev console
-            isConsoleActive = !isConsoleActive;
-            devConsole.SetActive(isConsoleActive);
-
-            //Focus on the inputBox if the console is active
-            if (isConsoleActive && inputBox != null)
+            if (keyboard.escapeKey.wasPressedThisFrame)
             {
-                inputBox.Select();
-                inputBox.ActivateInputField();
+                devConsole.SetActive(false);
             }
 
-            //Reset bools
-            isLeftShiftPressed = false;
-            isRightShiftPressed = false;
-            isFivePressed = false;
+            return;
         }
 
-        //Reset bools
-        if (Input.GetKeyUp(KeyCode.LeftShift) || Input.GetKeyUp(KeyCode.RightShift) ||
-            Input.GetKeyUp(KeyCode.Alpha5) || Input.GetKeyUp(KeyCode.Alpha7))
+        if(requiredKeys == null || requiredKeys.Length == 0)
         {
-            isLeftShiftPressed = false;
-            isRightShiftPressed = false;
-            isFivePressed = false;
+            Debug.LogWarning("DEV_ToggleConsole: No keys are set in requiredKeys", this);
+
+            return;
+        }
+
+        // Wait for all keys held down
+        foreach(Key requiredKey in requiredKeys)
+        {
+            if(requiredKey == Key.None || !keyboard[requiredKey].isPressed)
+            {
+                return;
+            }
+        }
+
+        devConsole.SetActive(true);
+
+        if(inputBox != null)
+        {
+            inputBox.Select();
+            inputBox.ActivateInputField();
         }
     }
 }

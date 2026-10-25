@@ -1,0 +1,20 @@
+public class #SCRIPTNAME# : DEV_ConsoleCommand
+{
+    public override string CommandName => "#SCRIPTNAME#";
+    public override string Description => "Description of the command";
+    public override string Usage => "#SCRIPTNAME#";
+
+    public override void Execute(string[] arguments, DEV_ConsoleController console)
+    {
+        if(arguments.Length > 0)
+        {
+            console.WriteLine("Usage: " + Usage);
+            return;
+        }
+
+        // Add implementation here
+
+        console.WriteLine("Command not implemented");
+    }
+}
+
